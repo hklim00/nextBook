@@ -25,7 +25,7 @@ src/
 ├─ domain/                핵심 모델과 표시 라벨
 ├─ features/discovery/    제외·다양성 발견 규칙
 ├─ pages/                 발견, 상세, 서재, 인물, 출판사, 작가, admin
-├─ providers/             Mock/Google Books 및 외부 adapter
+├─ providers/             정보나루·국립중앙도서관 및 Mock adapter
 ├─ repositories/          LocalStorage 상태와 D1 검수 저장소
 └─ styles/                공통 스타일
 migrations/               D1 SQL migration
@@ -76,12 +76,6 @@ npm run db:migrate:local
 
 저장 장르를 강화하거나 취향을 예측하지 않습니다.
 
-## Google Books 연동
-
-`BookProvider`는 `searchBooks`, `getBookByISBN`, `getBookMetadata`를 정의합니다. `MockBookProvider`로 오프라인 UX를 테스트하고, `GoogleBooksProvider`는 관리자용 보조 메타데이터 후보를 정규화합니다. `BookMetadataService`는 ISBN의 저장본을 먼저 찾고, 없을 때만 provider를 호출한 뒤 누락 필드가 있으면 검수 필요 상태로 저장합니다.
-
-Google Books 키는 선택 사항입니다. 할당량 관리가 필요할 때 `GOOGLE_BOOKS_API_KEY`를 서버 환경변수로 설정합니다. 브라우저에서 직접 호출하거나 사용자 요청마다 재조회하지 않습니다. Google Books 결과는 한국어 판본의 절대적 정답으로 취급하지 않습니다.
-
 ## 실제 도서 화면 노출
 
 D1에 저장된 책은 홈의 카테고리 선반, 랜덤 발견, 상세, 서재, 작가와 출판사 페이지에서 동일한 레코드로 표시됩니다. `cover_url`이 있으면 실제 표지를 사용하고 없을 때만 색상 임시 표지를 사용합니다. 별도의 API 검색·수집 UI는 제공하지 않습니다.
@@ -99,7 +93,7 @@ Cloudflare Cron Trigger가 매일 `18:00 UTC`(`03:00 KST`)에 `src/worker.ts`의
 
 로컬에서는 개발 서버 실행 후 `http://127.0.0.1:4321/cdn-cgi/local/scheduled?format=json`을 요청해 scheduled handler를 시험할 수 있습니다. 동기화 결과는 `discovery_sync_runs`에서 확인합니다.
 
-`books.metadata_source`는 `data4library`, `google_books`, `national_library`, `manual`, `mock`을 구분하고, `discovery_active`는 오늘 컬렉션에 포함된 도서인지 나타냅니다.
+`books.metadata_source`는 `data4library`, `national_library`, `manual`, `mock`을 구분하고, `discovery_active`는 오늘 컬렉션에 포함된 도서인지 나타냅니다.
 
 ## 관리자 검수
 
@@ -115,7 +109,7 @@ npm run build
 npm run format:check
 ```
 
-테스트는 사용자 상태 저장/교체/삭제, 최근 노출 저장, 읽음·관심 없음·최근 책 제외, 저자·출판사 반복 제한, 컬렉션 조회, 언급 관계와 상업 맥락, Google Books 정규화, API 없는 Mock Provider를 다룹니다.
+테스트는 사용자 상태 저장/교체/삭제, 최근 노출 저장, 읽음·관심 없음·최근 책 제외, 저자·출판사 반복 제한, 컬렉션 조회, 언급 관계와 상업 맥락, 정보나루·국립중앙도서관 정규화, API 없는 Mock Provider를 다룹니다.
 
 ## Cloudflare 배포
 
@@ -124,7 +118,7 @@ npm run format:check
 3. 반환된 ID를 `wrangler.jsonc`의 `database_id`에 입력
 4. `npx wrangler d1 migrations apply next-read-db --remote`
 5. 운영용 검수 데이터 적재
-6. 필요한 키를 `wrangler secret put GOOGLE_BOOKS_API_KEY`로 등록
+6. `wrangler secret put DATA4LIBRARY_API_KEY`로 정보나루 키 등록
 7. `npm run deploy`
 
 ## Free Tier 고려사항
@@ -139,6 +133,5 @@ npm run format:check
 ## 현재 Mock과 다음 단계
 
 - 책·인물·출처와 표지는 가상 데이터/색상 표지입니다.
-- Google Books adapter와 정규화 서비스는 구현됐지만 관리자 수집 버튼과 D1 metadata store 연결은 다음 단계입니다.
 - 실제 운영 전 검증된 국내 도서 메타데이터와 원출처를 입력하고 Cloudflare Access를 설정해야 합니다.
 - PWA manifest는 준비됐지만 오프라인 service worker는 아직 없습니다.

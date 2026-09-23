@@ -7,6 +7,5 @@ declare namespace Cloudflare {
     ENVIRONMENT?: string;
     NL_API_KEY?: string;
     DATA4LIBRARY_API_KEY?: string;
-    GOOGLE_BOOKS_API_KEY?: string;
   }
 }

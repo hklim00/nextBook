@@ -23,7 +23,7 @@ export interface Book {
   primaryCategory: string;
   coverTone: string;
   coverUrl?: string;
-  metadataSource?: 'mock' | 'manual' | 'google_books' | 'national_library' | 'data4library';
+  metadataSource?: 'mock' | 'manual' | 'national_library' | 'data4library';
   reviewRequired?: boolean;
   discoveryActive?: boolean;
 }
@@ -123,7 +123,7 @@ export interface ExternalBook {
   subject?: string;
   coverUrl?: string;
   detailUrl?: string;
-  source: 'google_books' | 'national_library' | 'data4library';
+  source: 'national_library' | 'data4library';
 }
 
 export interface WeightedKeyword {
