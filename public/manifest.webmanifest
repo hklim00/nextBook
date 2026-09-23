@@ -1,0 +1,10 @@
+{
+  "name": "다음책",
+  "short_name": "다음책",
+  "description": "검색하지 않았을 책을 발견하는 곳",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f2e9",
+  "theme_color": "#264d3d",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

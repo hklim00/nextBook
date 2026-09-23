@@ -1,0 +1,54 @@
+---
+import { env } from 'cloudflare:workers';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BookCard from '../../components/BookCard.astro';
+import { loadCatalog } from '../../repositories/catalogRepository';
+
+const catalog = await loadCatalog(env.DB);
+const collection = catalog.collections.find((item) => item.slug === Astro.params.slug);
+if (!collection) return Astro.redirect('/404');
+const items = catalog.collectionBooks
+  .filter((item) => item.collectionId === collection.id)
+  .sort((a, b) => a.displayOrder - b.displayOrder)
+  .map((item) => ({
+    book: catalog.books.find((book) => book.id === item.bookId),
+    reason: item.reason,
+  }))
+  .filter((item): item is { book: (typeof catalog.books)[number]; reason: string } =>
+    Boolean(item.book),
+  );
+---
+
+<BaseLayout title={collection.title} description={collection.description}>
+  <header class="shell collection-head">
+    <span class="eyebrow">Curated collection</span>
+    <h1 class="serif">{collection.title}</h1>
+    <p>{collection.description}</p>
+  </header>
+  <main class="shell collection-main">
+    <div class="book-grid">
+      {items.map(({ book, reason }) => (
+        <BookCard book={book} reason={reason} />
+      ))}
+    </div>
+  </main>
+  <style>
+    .collection-head {
+      padding: 72px 0 42px;
+      border-bottom: 1px solid var(--line);
+    }
+    .collection-head h1 {
+      font-size: clamp(1.65rem, 4.5vw, 2.7rem);
+      line-height: 1.1;
+      margin: 12px 0 20px;
+    }
+    .collection-head p {
+      max-width: 620px;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+    .collection-main {
+      padding-block: 48px 90px;
+    }
+  </style>
+</BaseLayout>

@@ -1,0 +1,38 @@
+---
+import type { Book } from '../domain/models';
+import BookCover from './BookCover.astro';
+const {
+  book,
+  reason,
+  showReason = true,
+  showDescription = false,
+} = Astro.props as {
+  book: Book;
+  reason: string;
+  showReason?: boolean;
+  showDescription?: boolean;
+};
+---
+
+<article class="book-card">
+  <a href={`/book/${book.id}`}>
+    <BookCover book={book} />
+    <h3>{book.title}</h3>
+    <p class="author">{book.authorDisplay}</p>
+    {showDescription && book.description && <p class="card-description">{book.description}</p>}
+    {showReason && <p class="reason">↳ {reason}</p>}
+  </a>
+</article>
+
+<style>
+  .card-description {
+    display: -webkit-box;
+    margin: 9px 0 0;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.58;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+</style>

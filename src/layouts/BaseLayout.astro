@@ -1,0 +1,116 @@
+---
+import '../styles/global.css';
+interface Props {
+  title?: string;
+  description?: string;
+}
+const { title = '다음책', description = '검색하지 않았을 책을 발견하는 곳' } = Astro.props;
+const path = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f5f2e9" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/favicon.svg" />
+    <title>{title === '다음책' ? title : `${title} — 다음책`}</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a href="/" class="logo serif" aria-label="다음책 홈">
+          다음책<span>.</span>
+        </a>
+        <nav aria-label="주요 메뉴">
+          <a class:list={{ active: path === '/' }} href="/">
+            발견
+          </a>
+          <a class:list={{ active: path === '/discover/random' }} href="/discover/random">
+            뜻밖의 한 권
+          </a>
+          <a class:list={{ active: path === '/library' }} href="/library">
+            내 서재
+          </a>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="shell site-footer">
+      <strong class="serif">다음책</strong>
+      <p>검색하지 않았을 책을 발견하는 곳.</p>
+    </footer>
+    <style>
+      .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: #f5f2e9e8;
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid #d9d4c780;
+      }
+      .header-inner {
+        height: 68px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .logo {
+        font-size: 1.45rem;
+        font-weight: 800;
+      }
+      .logo span {
+        color: var(--accent);
+      }
+      nav {
+        display: flex;
+        gap: 6px;
+      }
+      nav a {
+        padding: 9px 11px;
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 700;
+      }
+      nav a.active {
+        color: var(--green);
+        background: #e2e8dd;
+      }
+      .site-footer {
+        margin-top: 100px;
+        padding: 36px 0 110px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.82rem;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .site-footer p {
+        margin: 0;
+        flex: 1;
+      }
+      .site-footer a {
+        text-decoration: underline;
+      }
+      @media (min-width: 720px) {
+        .header-inner {
+          height: 78px;
+        }
+        nav a {
+          padding: 10px 16px;
+        }
+        .site-footer {
+          padding-bottom: 50px;
+        }
+      }
+    </style>
+  </body>
+</html>

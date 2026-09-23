@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "next-read",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-16",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+  },
+  "kv_namespaces": [
+    {
+      "binding": "SESSION",
+      "id": "7cae1873d7bd4d848b2d90a41ac85bd7",
+    },
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "next-read-db",
+      "database_id": "948e04ad-1002-46d1-bd94-c3062f6e6b6d",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "triggers": {
+    "crons": ["0 18 * * *"],
+  },
+}

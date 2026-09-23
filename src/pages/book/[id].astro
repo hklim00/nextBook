@@ -1,0 +1,210 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BookCover from '../../components/BookCover.astro';
+import BookCard from '../../components/BookCard.astro';
+import StatusButtons from '../../components/StatusButtons';
+import { env } from 'cloudflare:workers';
+import { loadCatalog } from '../../repositories/catalogRepository';
+import { loadRelatedBookIds } from '../../features/discovery/relatedBooks';
+
+const catalog = await loadCatalog(env.DB);
+const id = Number(Astro.params.id);
+const book = catalog.books.find((item) => item.id === id);
+if (!book) return Astro.redirect('/404');
+const publisher = catalog.publishers.find((item) => item.id === book.publisherId);
+const author = catalog.authors.find((item) => item.id === book.authorId);
+const relatedBookIds = await loadRelatedBookIds(env.DB, book.id);
+const relatedBooks = relatedBookIds
+  .map((relatedId) => catalog.books.find((item) => item.id === relatedId))
+  .filter((item) => item !== undefined && item.metadataSource !== 'mock')
+  .slice(0, 5);
+const publisherBooks = catalog.books
+  .filter(
+    (item) =>
+      item.id !== book.id &&
+      item.publisherId === book.publisherId &&
+      item.metadataSource !== 'mock',
+  )
+  .slice(0, 5);
+const authorBooks = catalog.books
+  .filter(
+    (item) =>
+      item.id !== book.id && item.authorId === book.authorId && item.metadataSource !== 'mock',
+  )
+  .sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''))
+  .slice(0, 5);
+---
+
+<BaseLayout title={book.title} description={book.description}>
+  <article class="shell detail">
+    <a class="back" href="/">
+      ← 발견으로 돌아가기
+    </a>
+    <section class="book-info">
+      <div class="cover-wrap">
+        <BookCover book={book} />
+      </div>
+      <div class="info-copy">
+        <span class="chip">{book.primaryCategory}</span>
+        <h2 class="serif">{book.title}</h2>
+        {book.subtitle && <p class="subtitle">{book.subtitle}</p>}
+        <p class="author">
+          {author ? (
+            <a href={`/author/${author.slug}`}>{book.authorDisplay} →</a>
+          ) : (
+            book.authorDisplay
+          )}
+        </p>
+        <p class="description">{book.description}</p>
+        <dl>
+          <div>
+            <dt>출판사</dt>
+            <dd>
+              {publisher ? <a href={`/publisher/${publisher.slug}`}>{publisher.name} →</a> : '미상'}
+            </dd>
+          </div>
+          <div>
+            <dt>출간</dt>
+            <dd>{book.publishedAt || '정보 없음'}</dd>
+          </div>
+        </dl>
+        <StatusButtons client:load bookId={book.id} />
+      </div>
+    </section>
+    {author && authorBooks.length > 0 && (
+      <section class="discovery-list">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Author works</span>
+            <h2 class="serif">{author.name}의 다른 작품</h2>
+          </div>
+          <a class="btn" href={`/author/${author.slug}`}>
+            전체 보기
+          </a>
+        </div>
+        <div class="book-grid">
+          {authorBooks.map((item) => (
+            <BookCard book={item} reason={`${author.name}의 다른 작품`} />
+          ))}
+        </div>
+      </section>
+    )}
+    {relatedBooks.length > 0 && (
+      <section class="discovery-list">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Related discovery</span>
+            <h2 class="serif">이 책에서 이어지는 발견</h2>
+          </div>
+          <p>정보나루가 이 책과 관련 있다고 제공한 성인 도서입니다.</p>
+        </div>
+        <div class="book-grid">
+          {relatedBooks.map((item) => (
+            <BookCard book={item} reason="정보나루 연관 도서" />
+          ))}
+        </div>
+      </section>
+    )}
+    {publisher && publisherBooks.length > 0 && (
+      <section class="discovery-list">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Publisher discovery</span>
+            <h2 class="serif">{publisher.name}에서 더 발견하기</h2>
+          </div>
+          <a class="btn" href={`/publisher/${publisher.slug}`}>
+            전체 보기
+          </a>
+        </div>
+        <div class="book-grid">
+          {publisherBooks.map((item) => (
+            <BookCard book={item} reason={`${publisher.name} 출판사의 다른 책`} />
+          ))}
+        </div>
+      </section>
+    )}
+  </article>
+  <style>
+    .detail {
+      padding-top: 34px;
+    }
+    .back {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .description {
+      line-height: 1.75;
+    }
+    .book-info {
+      display: grid;
+      gap: 34px;
+      padding: 42px 0;
+      border-top: 1px solid var(--line);
+    }
+    .cover-wrap {
+      width: min(50vw, 220px);
+      margin: auto;
+    }
+    .info-copy h2 {
+      font-size: clamp(1.55rem, 3.8vw, 2.35rem);
+      line-height: 1.12;
+      margin: 15px 0 8px;
+    }
+    .author,
+    .subtitle {
+      color: var(--muted);
+    }
+    .description {
+      margin: 24px 0;
+    }
+    dl {
+      border-top: 1px solid var(--line);
+      margin: 26px 0;
+    }
+    dl div {
+      display: grid;
+      grid-template-columns: 76px 1fr;
+      border-bottom: 1px solid var(--line);
+      padding: 11px 0;
+      font-size: 0.83rem;
+    }
+    dt {
+      color: var(--muted);
+    }
+    dd {
+      margin: 0;
+    }
+    .discovery-list {
+      border-top: 1px solid var(--line);
+      padding: 54px 0 68px;
+    }
+    .section-head {
+      align-items: end;
+      gap: 24px;
+      margin-bottom: 30px;
+    }
+    .section-head h2 {
+      margin: 9px 0 0;
+      font-size: clamp(1.25rem, 2.7vw, 1.75rem);
+    }
+    .section-head p {
+      max-width: 480px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 0;
+    }
+    @media (min-width: 720px) {
+      .detail {
+        padding-top: 50px;
+      }
+      .book-info {
+        grid-template-columns: minmax(190px, 250px) 1fr;
+        gap: 6vw;
+        padding: 65px 0;
+      }
+      .cover-wrap {
+        width: 100%;
+      }
+    }
+  </style>
+</BaseLayout>

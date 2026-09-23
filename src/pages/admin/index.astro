@@ -1,0 +1,157 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminCatalog from '../../components/AdminCatalog';
+import { env } from 'cloudflare:workers';
+import type { Book, Collection, CollectionBook } from '../../domain/models';
+import { D1MentionRepository } from '../../repositories/mentionRepository';
+
+let books: Book[] = [];
+let collections: Collection[] = [];
+let collectionBooks: CollectionBook[] = [];
+let syncStatus:
+  | {
+      status: string;
+      discoveryDate?: string;
+      completedAt?: string;
+      relatedCompleted: number;
+      relatedFailed: number;
+    }
+  | undefined;
+let storageMode: 'd1' | 'unavailable' = 'unavailable';
+try {
+  const repository = new D1MentionRepository(env.DB);
+  const storedBooks = await repository.listBooks();
+  if (storedBooks.length) {
+    books = storedBooks;
+    storageMode = 'd1';
+    const [result, collectionBookResult] = await Promise.all([
+      env.DB.prepare(
+        `SELECT id,slug,COALESCE(display_title,title) title,
+         COALESCE(display_description,description) description,
+         collection_type,is_active,display_order,basis,source,refreshed_at
+         FROM collections ORDER BY display_order`,
+      ).all<{
+        id: number;
+        slug: string;
+        title: string;
+        description: string | null;
+        collection_type: string;
+        is_active: number;
+        display_order: number;
+        basis: string | null;
+        source: string;
+        refreshed_at: string | null;
+      }>(),
+      env.DB.prepare(
+        'SELECT collection_id,book_id,score,reason,display_order FROM collection_books ORDER BY collection_id,display_order',
+      ).all<{
+        collection_id: number;
+        book_id: number;
+        score: number | null;
+        reason: string;
+        display_order: number;
+      }>(),
+    ]);
+    collections = result.results.map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      description: row.description ?? '',
+      collectionType: row.collection_type,
+      isActive: Boolean(row.is_active),
+      displayOrder: row.display_order,
+      basis: row.basis ?? undefined,
+      source: row.source,
+      refreshedAt: row.refreshed_at ?? undefined,
+    }));
+    collectionBooks = collectionBookResult.results.map((row) => ({
+      collectionId: row.collection_id,
+      bookId: row.book_id,
+      score: row.score ?? 0,
+      reason: row.reason,
+      displayOrder: row.display_order,
+    }));
+    const [lastRun, relationCounts] = await Promise.all([
+      env.DB.prepare(
+        `SELECT status,discovery_date,completed_at FROM discovery_sync_runs ORDER BY id DESC LIMIT 1`,
+      ).first<{ status: string; discovery_date: string | null; completed_at: string | null }>(),
+      env.DB.prepare(
+        `SELECT status,COUNT(*) count FROM book_relation_refreshes GROUP BY status`,
+      ).all<{ status: string; count: number }>(),
+    ]);
+    if (lastRun) {
+      syncStatus = {
+        status: lastRun.status,
+        discoveryDate: lastRun.discovery_date ?? undefined,
+        completedAt: lastRun.completed_at ?? undefined,
+        relatedCompleted:
+          relationCounts.results.find((item) => item.status === 'completed')?.count ?? 0,
+        relatedFailed: relationCounts.results.find((item) => item.status === 'failed')?.count ?? 0,
+      };
+    }
+  }
+} catch (error) {
+  console.error('D1 admin catalog unavailable.', error);
+}
+---
+
+<BaseLayout title="콘텐츠 검수">
+  <header class="admin-head">
+    <div class="shell">
+      <span class="eyebrow">Development tool</span>
+      <h1>콘텐츠 검수</h1>
+      <p>
+        자동으로 진정성을 확정하지 않습니다. 원출처에서 확인 가능한 사실만 기록하고, 사람이 공개
+        여부를 결정합니다.
+      </p>
+    </div>
+  </header>
+  <main class="shell admin-main">
+    <div class:list={['warning', { ready: storageMode === 'd1' }]}>
+      {storageMode === 'd1'
+        ? 'D1 영구 저장소에 연결되었습니다. 운영 배포에서는 Cloudflare Access로 이 경로를 보호하세요.'
+        : 'D1 카탈로그를 불러오지 못했습니다. 잠시 후 다시 확인하세요.'}
+    </div>
+    <AdminCatalog
+      client:load
+      books={books}
+      collections={collections}
+      collectionBooks={collectionBooks}
+      writable={storageMode === 'd1'}
+      syncStatus={syncStatus}
+    />
+  </main>
+  <style>
+    .admin-head {
+      background: #292d29;
+      color: white;
+      padding: 45px 0;
+    }
+    .admin-head h1 {
+      font-size: 1.55rem;
+      margin: 9px 0;
+    }
+    .admin-head p {
+      max-width: 650px;
+      color: #cdd3cc;
+      line-height: 1.6;
+    }
+    .admin-main {
+      padding: 32px 0;
+    }
+    .warning {
+      padding: 12px 15px;
+      border: 1px solid #d7a694;
+      background: #fff1eb;
+      color: #8a3827;
+      border-radius: 9px;
+      font-size: 0.76rem;
+      margin-bottom: 24px;
+    }
+    .warning.ready {
+      border-color: #9fb39a;
+      background: #edf3e9;
+      color: var(--green);
+    }
+  </style>
+</BaseLayout>

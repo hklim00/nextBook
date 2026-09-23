@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RandomDiscovery from '../../components/RandomDiscovery';
+import { env } from 'cloudflare:workers';
+import { loadCatalog } from '../../repositories/catalogRepository';
+const catalog = await loadCatalog(env.DB);
+const storedBooks = catalog.books.filter(
+  (book) => book.metadataSource !== 'mock' && book.discoveryActive !== false,
+);
+const books = storedBooks;
+---
+
+<BaseLayout title="랜덤 발견">
+  <header class="shell random-head">
+    <span class="eyebrow">Serendipity mode</span>
+    <p>
+      취향을 맞히지 않습니다. 읽은 책과 관심 없는 책, 최근 본 책을 피해서 새로운 한 권을 건넵니다.
+    </p>
+  </header>
+  <main class="shell random-main">
+    <RandomDiscovery client:load books={books} />
+  </main>
+  <style>
+    .random-head {
+      padding: 40px 0 25px;
+      display: flex;
+      gap: 20px;
+      justify-content: space-between;
+      align-items: start;
+      border-bottom: 1px solid var(--line);
+    }
+    .random-head p {
+      margin: 0;
+      max-width: 510px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.6;
+    }
+    .random-main {
+      padding: 42px 0 90px;
+      min-height: 620px;
+    }
+    @media (min-width: 720px) {
+      .random-head {
+        padding-top: 58px;
+      }
+      .random-main {
+        padding-top: 62px;
+      }
+    }
+  </style>
+</BaseLayout>

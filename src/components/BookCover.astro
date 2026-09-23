@@ -1,0 +1,28 @@
+---
+import type { Book } from '../domain/models';
+const { book, class: className = '' } = Astro.props as { book: Book; class?: string };
+---
+
+{book.coverUrl ? (
+  <div class:list={['cover', 'real-cover', className]} style={`--tone:${book.coverTone}`}>
+    <img src={book.coverUrl} alt={`${book.title} 표지`} loading="lazy" decoding="async" />
+  </div>
+) : (
+  <div
+    class:list={['cover', className]}
+    style={`--tone:${book.coverTone}`}
+    role="img"
+    aria-label={`${book.title} 임시 표지`}
+  >
+    <span class="cover-title">{book.title}</span>
+    <span class="cover-author">{book.authorDisplay}</span>
+  </div>
+)}
+
+<style>
+  .real-cover img {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+</style>

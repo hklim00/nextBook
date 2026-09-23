@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import LibraryShelf from '../components/LibraryShelf';
+import { env } from 'cloudflare:workers';
+import { loadCatalog } from '../repositories/catalogRepository';
+const { books } = await loadCatalog(env.DB);
+---
+
+<BaseLayout title="내 서재" description="읽고 싶은 책과 읽은 책을 브라우저에 조용히 모아둡니다.">
+  <header class="shell page-head">
+    <span class="eyebrow">My shelves</span>
+    <h1 class="serif">내 서재</h1>
+    <p>발견 중 표시한 책만 이 브라우저에 저장됩니다. 로그인이나 취향 분석은 하지 않습니다.</p>
+  </header>
+  <main class="shell search-area">
+    <LibraryShelf client:load books={books} />
+  </main>
+  <style>
+    .page-head {
+      padding: 62px 0 35px;
+    }
+    .page-head h1 {
+      margin: 8px 0 14px;
+      font-size: clamp(1.6rem, 4.5vw, 2.5rem);
+      line-height: 1.08;
+      letter-spacing: -0.045em;
+    }
+    .page-head p {
+      max-width: 620px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .search-area {
+      min-height: 520px;
+      padding-bottom: 80px;
+    }
+  </style>
+</BaseLayout>

@@ -1,0 +1,60 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BookCard from '../../components/BookCard.astro';
+import { env } from 'cloudflare:workers';
+import { loadCatalog } from '../../repositories/catalogRepository';
+
+const catalog = await loadCatalog(env.DB);
+const author = catalog.authors.find((item) => item.slug === Astro.params.slug);
+if (!author) return Astro.redirect('/404');
+const list = catalog.books
+  .filter((book) => book.authorId === author.id && book.metadataSource !== 'mock')
+  .sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''))
+  .slice(0, 12);
+---
+
+<BaseLayout title={author.name} description={`${author.name}의 다른 작품을 발견합니다.`}>
+  <header class="shell author-head">
+    <span class="eyebrow">Author works</span>
+    <h1 class="serif">{author.name}의 다른 작품</h1>
+    <p>정보나루에서 작가명이 확인된 국내 판본을 최근 출간 순으로 보여드립니다.</p>
+  </header>
+  <main class="shell author-books">
+    <div class="book-grid">
+      {list.map((book) => (
+        <BookCard book={book} reason={`${author.name}의 다른 작품`} />
+      ))}
+    </div>
+    {list.length < 2 && (
+      <p class="notice">확인된 다른 작품이 부족해 다음 일일 수집 때 다시 조회합니다.</p>
+    )}
+  </main>
+  <style>
+    .author-head {
+      padding: 60px 0 42px;
+      border-bottom: 1px solid var(--line);
+    }
+    .author-head h1 {
+      font-size: clamp(1.55rem, 4vw, 2.45rem);
+      line-height: 1.08;
+      margin: 10px 0 18px;
+    }
+    .author-head p {
+      max-width: 600px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .author-books {
+      padding: 48px 0 90px;
+    }
+    .notice {
+      margin-top: 35px;
+      padding: 18px;
+      border-left: 3px solid var(--accent);
+      background: #eee9dd;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.6;
+    }
+  </style>
+</BaseLayout>

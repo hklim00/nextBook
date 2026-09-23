@@ -1,0 +1,44 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BookCard from '../../components/BookCard.astro';
+import { env } from 'cloudflare:workers';
+import { loadCatalog } from '../../repositories/catalogRepository';
+const { books, publishers } = await loadCatalog(env.DB);
+const publisher = publishers.find((p) => p.slug === Astro.params.slug);
+if (!publisher) return Astro.redirect('/404');
+const list = books.filter(
+  (book) => book.publisherId === publisher.id && book.metadataSource !== 'mock',
+);
+---
+
+<BaseLayout title={publisher.name}>
+  <header class="shell publisher-head">
+    <span class="eyebrow">Publisher shelf</span>
+    <h1 class="serif">{publisher.name}</h1>
+    <p>한 출판사의 결을 따라가되, 판매 순위가 아니라 목록 안의 다양성을 살펴봅니다.</p>
+  </header>
+  <main class="shell publisher-books">
+    <div class="book-grid">
+      {list.map((book) => (
+        <BookCard book={book} reason={`${publisher.name}의 목록에서 발견`} />
+      ))}
+    </div>
+  </main>
+  <style>
+    .publisher-head {
+      padding: 70px 0 45px;
+      border-bottom: 1px solid var(--line);
+    }
+    .publisher-head h1 {
+      font-size: clamp(1.65rem, 4.5vw, 2.6rem);
+      margin: 10px 0;
+    }
+    .publisher-head p {
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .publisher-books {
+      padding: 55px 0 90px;
+    }
+  </style>
+</BaseLayout>
