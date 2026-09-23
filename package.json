@@ -17,6 +17,7 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:seed:generate": "tsx scripts/generate-seed.ts",
+    "db:classics:generate": "node scripts/generate-classics-migration.mjs",
     "db:migrate:local": "cross-env XDG_CONFIG_HOME=.wrangler/config wrangler d1 migrations apply next-read-db --local",
     "db:seed:local": "npm run db:seed:generate && cross-env XDG_CONFIG_HOME=.wrangler/config wrangler d1 execute next-read-db --local --file=./src/db/seed.sql",
     "deploy": "npm run build && cross-env XDG_CONFIG_HOME=.wrangler/config wrangler deploy"

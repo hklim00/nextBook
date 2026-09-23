@@ -1,4 +1,12 @@
-import { integer, primaryKey, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import {
+  index,
+  integer,
+  primaryKey,
+  real,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core';
 const timestamps = {
   createdAt: text('created_at').notNull().default('CURRENT_TIMESTAMP'),
   updatedAt: text('updated_at').notNull().default('CURRENT_TIMESTAMP'),
@@ -159,6 +167,85 @@ export const discoverySyncRuns = sqliteTable('discovery_sync_runs', {
   startedAt: text('started_at').notNull().default('CURRENT_TIMESTAMP'),
   completedAt: text('completed_at'),
 });
+export const classicSources = sqliteTable('classic_sources', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  publisher: text('publisher'),
+  sourceUrl: text('source_url').notNull(),
+  listMirrorUrl: text('list_mirror_url'),
+  verifiedVia: text('verified_via'),
+  createdAt: text('created_at').notNull().default('CURRENT_TIMESTAMP'),
+});
+export const classicWorks = sqliteTable(
+  'classic_works',
+  {
+    workId: text('work_id').primaryKey(),
+    titleKo: text('title_ko').notNull(),
+    authorKo: text('author_ko'),
+    category: text('category').notNull(),
+    recordType: text('record_type', { enum: ['work', 'collection'] }).notNull(),
+    originalTitle: text('original_title'),
+    firstPublishedYear: integer('first_published_year'),
+    reviewStatus: text('review_status', { enum: ['seed', 'needs_work_split'] }).notNull(),
+    sourceOrder: integer('source_order').notNull(),
+    isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+    ...timestamps,
+  },
+  (table) => [
+    index('classic_works_candidate_lookup').on(
+      table.isActive,
+      table.recordType,
+      table.reviewStatus,
+      table.category,
+      table.sourceOrder,
+    ),
+  ],
+);
+export const classicWorkSources = sqliteTable(
+  'classic_work_sources',
+  {
+    workId: text('work_id')
+      .notNull()
+      .references(() => classicWorks.workId),
+    sourceId: text('source_id')
+      .notNull()
+      .references(() => classicSources.id),
+  },
+  (table) => [primaryKey({ columns: [table.workId, table.sourceId] })],
+);
+export const classicEditions = sqliteTable(
+  'classic_editions',
+  {
+    workId: text('work_id')
+      .notNull()
+      .references(() => classicWorks.workId),
+    isbn13: text('isbn13')
+      .notNull()
+      .references(() => books.isbn13),
+    matchStatus: text('match_status', { enum: ['candidate', 'verified', 'rejected'] })
+      .notNull()
+      .default('verified'),
+    lastCheckedAt: text('last_checked_at').notNull().default('CURRENT_TIMESTAMP'),
+  },
+  (table) => [primaryKey({ columns: [table.workId, table.isbn13] })],
+);
+export const classicDailySelections = sqliteTable(
+  'classic_daily_selections',
+  {
+    discoveryDate: text('discovery_date').notNull(),
+    workId: text('work_id')
+      .notNull()
+      .references(() => classicWorks.workId),
+    isbn13: text('isbn13').references(() => books.isbn13),
+    status: text('status', { enum: ['selected', 'matched', 'unmatched', 'published'] }).notNull(),
+    displayOrder: integer('display_order'),
+    createdAt: text('created_at').notNull().default('CURRENT_TIMESTAMP'),
+  },
+  (table) => [
+    primaryKey({ columns: [table.discoveryDate, table.workId] }),
+    index('classic_daily_recent_lookup').on(table.workId, table.discoveryDate),
+  ],
+);
 export const collectionBooks = sqliteTable(
   'collection_books',
   {
